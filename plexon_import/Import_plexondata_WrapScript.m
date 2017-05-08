@@ -18,17 +18,17 @@ close all; clear all; home;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % If the plexon routines are not already in the Path:
-plexonRoutinesPath = 'YourPath\rat_bmi\plexon_import';
+plexonRoutinesPath = '/Users/mariajantz/Documents/Work/code/rat_bmi/';
 addpath(genpath(plexonRoutinesPath));
 
-% Set the directories' paths:
-directory = 'YourPath\rat_bmi\';
-directories.rawdata = [directory 'Rawdata'];
-directories.database = [directory 'Database'];
+% Set the directories' paths for data:
+directory = '/Users/mariajantz/Documents/Work/data/plexon_data/';
+directories.rawdata = [directory 'plx_files'];
+directories.database = [directory 'mat_files'];
 cd(directories.rawdata)
 
 %FILENAME : Be specific if you only want one certain file
-targetfile = '*21.plx'; 
+targetfile = 'A16_20161027.plx'; 
 filenames = dir(targetfile);
 
 % BIN SIZE: Specify desired bin size
