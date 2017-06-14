@@ -110,7 +110,7 @@ function [ events, rat, treadmill ] = importViconData( path,        ...
     treadmill. frame    = rat.frame;
     treadmill. subframe = rat.subframe;
  
-    % Seek treadmil markers columns
+    % Seek treadmill markers columns
     for j=1:length(tdmMarkers)
        mkName = [tdmName ':' tdmMarkers{j}];
        mkRow  = cellfun(@(x)x(idx_tj+2), C(1,1:nColTj),'UniformOutput', false);
@@ -122,11 +122,12 @@ function [ events, rat, treadmill ] = importViconData( path,        ...
            cellfun( @(x)str2double(x((idx_tj+5:end))), C(1,idxCol:idxCol+2), ...
                     'UniformOutput',false));
     end
-
-    for i = 1:32
-        mkRow{i}
-    end
     
+    if ~isempty(tdmMarkers)
+    for i = 1:32
+        mkRow{i};
+    end
+    end
     % Seek rat markers columns
     for j=1:length(ratMarkers)
        mkName = [ratName ':' ratMarkers{j}];
