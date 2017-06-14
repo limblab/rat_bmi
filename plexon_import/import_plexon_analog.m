@@ -1,5 +1,4 @@
 function an_data = import_plexon_analog(data_dir, filename, channels)
-
 %set up the EMG data structure
 an_data = struct(); 
 an_data.channel = []; %array of channel numbers

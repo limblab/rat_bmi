@@ -1,7 +1,8 @@
 close all; clear all;
 
 %name of the directory where your data is stored
-data_dir = '/Users/mariajantz/Documents/Work/data/plexon_data/';
+data_dir = '/Volumes/fsmresfiles/Basic_Sciences/Phys/L_MillerLab/data/Rats/plexon_data/';
+
 %name of the file to import
 filename = 'E1_170519_noobstacle_1';
 channels = [17 18 32:48]; %channels to import
@@ -15,7 +16,7 @@ channels = [17 18 32:48]; %channels to import
 if exist([data_dir 'mat_files/' filename '.mat'])
     disp('loading data');
     load([data_dir 'mat_files/' filename '.mat']);
-    %otherwise import and save it
+%otherwise import and save it
 else
     disp('importing data');
     an_data = import_plexon_analog(data_dir, filename, channels);
@@ -27,6 +28,7 @@ data_ch = 32:47;
 %get indices of channels with good data
 idx = find(ismember(an_data.channel, data_ch));
 
+%TODO: this is kind of messy, deal with it
 if plot_raw_data
     sep_fact = 10;
     xvals = [1:size(an_data.data, 1)]/an_data.freq(1);
@@ -56,15 +58,22 @@ set(gca, 'FontSize', 20);
 yyaxis right;
 
 
-%now bandpass filter at 70-80 hz (sample freq 1000) to see what I get
-[A,B,C,D] = butter(10,[70 80]/500);
-d = designfilt('bandpassiir','FilterOrder',20, ...
-    'HalfPowerFrequency1',70,'HalfPowerFrequency2',80, ...
-    'SampleRate',1000);
-y = filtfilt(A, B, new_data); 
-new_plot = y + sep_fact*[1:size(an_data.data(:, idx), 2)];
-plot(xvals, new_plot)
+%TODO: spectrogram with and without common av subtracted
+figure(10); title('Subtracted Common Avg'); 
+figure(11); title('Raw Data');
+for i=1:size(new_data, 2)
+    figure(10); 
+    subplot(4, 4, i);
+    spectrogram(new_data(:, i)); 
+    title(['Channel ' num2str(channels(idx(i)))]);
+    figure(11); 
+    subplot(4, 4, i); 
+    spectrogram(an_data.data(:, idx(i))); 
+    title(['Channel ' num2str(channels(idx(i)))]); 
+end
+ 
 
+%TODO: bandpass filter at diff freqs
 
 
 
