@@ -1,18 +1,16 @@
-clear all;
+close all; clear all;
 
 %name of the directory where your data is stored
 data_dir = '/Volumes/fsmresfiles-3/Basic_Sciences/Phys/L_MillerLab/data/Rats/plexon_data/';
 figpath = '/Users/mariajantz/Documents/Work/figures/epidural/'; 
-dosave = true; 
 
 %name of the file(s) to import
-filenames = {'E2_170519_noobstacle_1', 'E2_170526_noobstacle_2', 'E1_170519_noobstacle_1', 'E1_170526_noobstacle_2'};
+filenames = {'E2_170519_noobstacle_1'};
 channels = [16 17 32:47]; %channels to import
 %E2_170519_noobstacle_1.plx, also 5-26 t2
 %full set of channels is Analog side 2 1:16, Vicon 17:18 Analog side 1 32:47, EMG 48:63
 
 for f=1:length(filenames)
-    close all;
     filename = filenames{f};
     %if the data has already been converted, load
     if exist([data_dir 'mat_files/' filename '.mat'])
@@ -54,15 +52,14 @@ for f=1:length(filenames)
     
     data_visual(an_data, data_ch, exclude_ch, data_range)
     
-    if dosave
     %save the figures as both fig and pdf
     figure(1); 
     savefig([figpath filename '_raw_trace']);
     figure(2); 
     savefig([figpath filename '_ca_trace']);
     figure(10); 
-    savefig([figpath filename '_ca_spec']);
+    savefig([figpath filename '_raw_']);
     figure(11); 
-    savefig([figpath filename '_raw_spec']);
-    end
+    savefig([figpath filename '_raw']);
+    
 end
