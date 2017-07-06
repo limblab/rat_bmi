@@ -7,7 +7,9 @@ an_data.data = []; %a/d values for those channels
 an_data.freq = []; %save frequency of channels
 
 
-cd([data_dir 'plx_files/']);
+cd([data_dir 'plx_files/testing/']); %path for testing files
+%cd([data_dir 'plx_files/']); 
+
 for channel=channels
     %import data
     [adfreq, ~, ts, ~, ad] = plx_ad_v([filename '.plx'], channel);
