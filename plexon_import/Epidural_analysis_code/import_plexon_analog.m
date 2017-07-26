@@ -7,8 +7,8 @@ an_data.data = []; %a/d values for those channels
 an_data.freq = []; %save frequency of channels
 
 
-cd([data_dir 'plx_files/testing/']); %path for testing files
-%cd([data_dir 'plx_files/']); 
+%cd([data_dir 'plx_files/testing']); %path for testing files
+cd([data_dir]); 
 
 for channel=channels
     %import data
@@ -25,5 +25,5 @@ for channel=channels
 end
 
 %now save the EMG data as a .mat file in the same folder as the other data
-save([data_dir 'mat_files/' filename], 'an_data'); 
+save([data_dir filename], 'an_data'); 
 
