@@ -6,11 +6,8 @@ an_data.timestamps = []; %time stamps
 an_data.data = []; %a/d values for those channels
 an_data.freq = []; %save frequency of channels
 
-
-%cd([data_dir 'plx_files/testing']); %path for testing files
-cd([data_dir]); 
-
-for channel=channels
+cd(data_dir);
+for channel = channels
     %import data
     [adfreq, ~, ts, ~, ad] = plx_ad_v([filename '.plx'], channel);
     %if there is data on a channel, add it to the data structure
@@ -24,6 +21,11 @@ for channel=channels
     end 
 end
 
-%now save the EMG data as a .mat file in the same folder as the other data
-save([data_dir filename], 'an_data'); 
+an_data.data = an_data.data'; %We want the data in a CHANNELS x TIMESTAMPS format
+
+if exist([data_dir 'mat_files/'], 'dir') ~= 7 %If mat_files folder doesn't exist:
+    mkdir ([data_dir 'mat_files/']);
+end
+%now save the Epidural data as a .mat file in the mat_files folder
+save([data_dir 'mat_files/' filename], 'an_data'); 
 
