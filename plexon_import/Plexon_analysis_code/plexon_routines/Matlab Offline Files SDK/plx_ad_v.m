@@ -32,7 +32,7 @@ if nargin ~= 2
     error 'Expected 2 input arguments';
 end
 
-[ filename, isPl2 ] = internalPL2ResolveFilenamePlx( filename );
+[ filename, isPl2 ] = internalPL2ResolveFilenamePlx(filename);
 if isPl2 == 1
     % return data from .pl2 file
     pl2Channel = channel;
