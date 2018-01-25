@@ -14,22 +14,31 @@ defaultHP = 50;        %High pass filter
 defaultLP = 10;        %Low pass filter
 defaultNormalize = 0;  %Normalize EMG
 
-if ~isfield (params, 'binsize')
-    fprintf('No binsize specified. Using default: 0.05s');
+if exist('params')
+    if ~isfield (params, 'binsize')
+        fprintf('No binsize specified. Using default: 0.05s');
+        params.binsize = defaultBinsize;
+    end
+    if ~isfield (params, 'EMG_hp')
+        warning('No high pass filter specified. Using default: 50Hz');
+        params.EMG_hp = defaultHP;
+    end
+    if ~isfield (params, 'EMG_lp')
+        warning('No low pass filter specified. Using default: 10Hz');
+        params.EMG_lp = defaultLP;
+    end
+    if ~isfield (params, 'NormData')
+        warning('No EMG normalization.');
+        params.NormData = defaultNormalize;
+    end
+else
+    warning('No parameters specified, using all defaults')
     params.binsize = defaultBinsize;
-end
-if ~isfield (params, 'EMG_hp')
-    %fprintf('No high pass filter specified. Using default: 50Hz');
     params.EMG_hp = defaultHP;
-end
-if ~isfield (params, 'EMG_lp')
-    %fprintf('No low pass filter specified. Using default: 10Hz');
     params.EMG_lp = defaultLP;
-end
-if ~isfield (params, 'NormData')
-    %fprintf('No EMG normalization.');
     params.NormData = defaultNormalize;
 end
+
 
 emgsamplerate = emg_data.freq;   %Rate at which emg data were actually acquired.
 emg_times = single(0:1/emgsamplerate:(size(emg_data.data,1)-1)/emgsamplerate);

@@ -1,40 +1,80 @@
-function [emgdatabin, emg_data] = load_plexondata_EMG(filename, params)
+function [emgDataBin, emgData] = load_plexondata_EMG(filename,varargin)
+%  --- load_plexondata_EMG ---
+% Loads EMG data from a plexon file into a matlab structure and a binned
+% matlab structure.
+%
+% - Input -
+% filename          Name of the file
+% params            struct with EMG binning parameters
+%    binsize            bin size in seconds     [.05]
+%    EMG_hp             EMG high pass filter corner in Hz [50]
+%    EMG_lp             EMG low pass filter corner in Hz [10]
+%    defaultNormalize   normalize the EMGs? [false]
+%
+% - Output -
+% emgdatabin        Structure containing binned EMG data
+%       
+% emgdata           Structure containing raw EMG data
+
+% -- Changelog --
+%   
+% added channel names field, using plx_adchan_names. Added comments for help
+% documentation, changed  the display and warnings a little -- KLB 2018.01.22
 
 
-emgdatabin = [];
+emgDataBin = [];
 
 %set up the EMG data structure
-emg_data = struct(); 
-emg_data.channel = []; %array of channel numbers
-emg_data.timestamps = []; %time stamps
-emg_data.data = []; %a/d values for those channels
-emg_data.freq = [];
+emgData = struct(); 
+emgData.channel = []; %array of channel numbers
+emgData.name = {}; % Cell array of channel names -- this will check that these are EMG channels
+emgData.timestamps = []; %time stamps
+emgData.data = []; %a/d values for those channels
+emgData.freq = [];
 
-for channel = 49:64 %I think this is really just 48:64 but I'm hedging my bets
-    %import data
-    [adfreq, ~, ts, ~, ad] = plx_ad_v([filename], channel);
-    %if there is data on a channel, add it to the data structure
-    if ad~=-1
-        disp(['channel ' num2str(channel) ' has actual values so save them'])
-        emg_data.data(:, end+1) = ad; 
-        emg_data.timestamps(end+1) = ts; 
-        emg_data.channel(end+1) = channel; 
-        emg_data.freq = adfreq; %It will be overwritten, but all channels will have been collected at same freq
-    
-    else
-    disp(['channel ' num2str(channel) ' has no EMG values'])    
+% list of channels named 'EMG-xxx'
+[~,names] = plx_adchan_names(filename); % character array of channel names
+EMGList = {}; % EMG names
+chanNums = []; % channel number -- 0 based (gotta match that plexon!)
+for ii = 1:size(names,1) % there's gotta be a better way!
+    if any(strfind(names(ii,:),'EMG-'))
+
+        EMGList{end+1} = names(ii,[names(ii,:)~=char(0)]); % save it into the list of EMGs
+        chanNums(end+1) = ii-1;
     end
 end
 
-if ~isempty(emg_data.channel)    
-    emgsamplerate = emg_data.freq;   %Rate at which emg data were actually acquired.
-    emg_times = single(0:1/emgsamplerate:(size(emg_data.data,1)-1)/emgsamplerate);
-    emg_data.data = [emg_times' emg_data.data]; %Add times to matrix
+    
+for channel = 1:length(EMGList) % for each channel labeled 'EMG-'
+    %import data
+    [adfreq, ~, ts, ~, ad] = plx_ad_v([filename], EMGList{channel});
+    %if there is data on a channel, add it to the data structure
+    if ad~=-1
+        disp([EMGList{channel} ' contains data, saving to structure'])
+        emgData.data(:, end+1) = ad; 
+        emgData.timestamps(end+1) = ts; 
+        emgData.channel(end+1) = chanNums(channel); % Analog channel name
+        emgData.freq = adfreq; %It will be overwritten, but all channels will have been collected at same freq
+        emgData.name(end+1) = EMGList(channel); % EMG channel name
+    
+    else
+    warning([EMGList{channel} ' doesn''t have any data, skipping...'])    
+    end
+end
+
+if ~isempty(emgData.channel)    
+    emgsamplerate = emgData.freq;   %Rate at which emg data were actually acquired.
+    emg_times = single(0:1/emgsamplerate:(size(emgData.data,1)-1)/emgsamplerate);
+    emgData.data = [emg_times' emgData.data]; %Add times to matrix
     
     try
-        emgdatabin = bin_plexon_EMG(emg_data, params);
+        if exist('params')
+            emgDataBin = bin_plexon_EMG(emgData, params);
+        else
+            emgDataBin = bin_plexon_EMG(emgData);
+        end
     catch
-        emgdatabin = [];
+        emgDataBin = [];
         warning('Could not bin EMGs');
         return;
     end
@@ -43,3 +83,6 @@ else
     
 end
 
+
+
+end
