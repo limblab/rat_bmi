@@ -24,13 +24,15 @@ pause(0.05);
 
 %% Ripple        
 
-stim_params = struct('dbg_lvl',1,'comm_timeout_ms',15,'blocking',false,'zb_ch_page',2,'serial_string',bmi_params.bmi_fes_stim_params.port_wireless)
+stim_params = struct('dbg_lvl',1,'comm_timeout_ms',15,'blocking',false,'zb_ch_page',2,'serial_string',bmi_params.stim_params.serial_string)
 wStim  = wireless_stim(stim_params);
+pause(.1)
+drawnow
 
 try
     % Switch to the folder that contains the calibration file
     cur_dir = pwd;
-    cd( bmi_params.bmi_fes_stim_params.path_cal_ws );
+    cd( bmi_params.stim_params.path_cal_ws );
 
     % see how old the calibration file is. If it's over a week old,
     % make a new one
@@ -43,6 +45,8 @@ try
 
 
     wStim.init();
+    pause(.01)
+    drawnow
 
     wStim.version();      % print version info, call after init
 
@@ -61,7 +65,7 @@ try
     % mode] ...)
     % this will work only if the bmi and bmi_stim folders are on
     % the path. HAHAHA
-    setup_wireless_stim_fes(wStim, bmi_params.bmi_fes_stim_params);
+    setup_wireless_stim_fes(wStim, bmi_params.stim_params);
 
 % if something went wrong close communication and quit
 catch ME

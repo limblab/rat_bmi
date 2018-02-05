@@ -1,8 +1,9 @@
-function new_spikes = get_New_PlexData(s, params)
+function new_spikes = get_New_PlexData(s, params, tsPointer)
 
 new_spikes = zeros(length(params.n_neurons),1);
 % get data
 [n, ts_new] = PL_GetTS(s);
+fwrite(tsPointer,ts_new,'double');
 
 % check if data makes sense
 
@@ -13,7 +14,7 @@ if n > 0
     end
 
     % remove stim artifacts
-    ts_new = remove_Artifacts(ts_new, params);
+%     ts_new = remove_Artifacts(ts_new, params);
 end
 
 % want to worry about sorted neurons? will have to change this...

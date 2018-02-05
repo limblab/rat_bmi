@@ -60,7 +60,7 @@ function realtime_Wrapper(fes_params)
         fes_params = struct(); % set up an empty structure to pass in
     end
     
-    fes_params = fes_params_defaults(fes_params);
+%     fes_params = fes_params_defaults(fes_params);
 % catch ME
 %     error(ME) % kick us out if necessary
 % end
@@ -68,9 +68,9 @@ function realtime_Wrapper(fes_params)
 %% Set up stim and plexon/Blackrock
 % handles for cortical connection and Ripple objects
 try
-    if strcmp(fes_params.cortical_recording,'Plexon')
+    if strcmp(fes_params.cort_source,'Plexon')
         [wStim,pRead] = setupCommunication(fes_params);
-    elseif strcmp(fes_params.cortical_recording,'Blackrock')
+    elseif strcmp(fes_params.cort_source,'Blackrock')
         [wStim,cbus] = setupCommunication(fes_params);
     end
 catch ME
@@ -85,7 +85,7 @@ keepRunning = msgbox('Press ''ok'' to quit'); % handle to end stimulation
 
 if fes_params.display_plots
     stimFig.fh = figure('Name','FES Commands'); % setup visualization of stimulation
-    stimFig = stim_fig(stimFig,[],[],fes_params.bmi_fes_stim_params,'init'); % using the old stim fig code
+    stimFig = stim_fig(stimFig,[],[],fes_params.stim_params,'init'); % using the old stim fig code
 end
 
 
@@ -101,9 +101,11 @@ end
 fes_params.save_dir = dirName;
 
 spFile = [dirName '\Spikes.stm'];
+tsFile = [dirName, '\TS.stm'];
 predFile = [dirName, '\EMG_Preds.stm'];
 stimFile = [dirName, '\Stim.stm'];
 
+tsPointer = fopen(tsFile,'w');
 spPointer = fopen(spFile,'w');
 predPointer = fopen(predFile,'w');
 stimPointer = fopen(stimFile,'w');
@@ -115,21 +117,19 @@ loopCnt = 0; % loop counter for S&G -- might want to do some variety of catch la
 % trialCnt = 0; % trial number for catch trials for the monkey. 
 tStart = tic; % start timer
 tLoopOld = toc(tStart); % initial loop timer 
-load(fes_params.neuron_decoder); % load the neuron decoder into a separate structure because.
-% load('C:\Users\bly0753\Downloads\N8_171219_decoderModel.mat');
-neuronDecoder = model;
+neuronDecoder = fes_params.decoder;
 clear model;
-% catchTrialInd = randperm(100,fes_params.bmi_fes_stim_params.perc_catch_trials); % which trials are going to be catch
-binsize = fes_params.emg_decoder.binsize; % because I'm lazy and don't feel like always typing this.
+% catchTrialInd = randperm(100,fes_params.stim_params.perc_catch_trials); % which trials are going to be catch
+binsize = fes_params.binsize; % because I'm lazy and don't feel like always typing this.
 
 
 drawnow; % take care of anything waiting to be executed, empty thread
 
-stimAmp = zeros(length(fes_params.bmi_fes_stim_params.PW_min));
-stimPW = zeros(length(fes_params.bmi_fes_stim_params.PW_min));
+stimAmp = zeros(length(fes_params.stim_params.PW_min));
+stimPW = zeros(length(fes_params.stim_params.PW_min));
 
 
-fRates = zeros(neuronDecoder.fillen/neuronDecoder.binsize,length(neuronDecoder.neuronIDs));
+fRates = zeros(round(neuronDecoder.fillen/neuronDecoder.binsize),length(neuronDecoder.neuronIDs));
 
 try
 while ishandle(keepRunning)
@@ -140,7 +140,7 @@ while ishandle(keepRunning)
     tLoop = tLoopNew - tLoopOld;
     
     if ((tLoop+.02) < binsize) && fes_params.display_plots % if we have more than 20 ms extra time, update the stim figure
-        stimFig = stim_fig(stimFig,stimPW,stimAmp,fes_params.bmi_fes_stim_params,'exec');
+        stimFig = stim_fig(stimFig,stimPW,stimAmp,fes_params.stim_params,'exec');
         tWaitStart = tic; % Wait loop time
         while (toc(tWaitStart) + tLoop) < binsize
             drawnow;    % empty process
@@ -157,7 +157,7 @@ while ishandle(keepRunning)
     tLoopOld = toc(tStart); % reset timer count
     
     %% collect data from plexon, store in binary
-    new_spikes = get_New_PlexData(pRead, fes_params);
+    new_spikes = get_New_PlexData(pRead, fes_params,tsPointer);
     fRates = [new_spikes; fRates(1:end-1,:)];
     
     tempdata = [tLoopOld,new_spikes];
@@ -168,7 +168,7 @@ while ishandle(keepRunning)
     emgPreds = [1 fRates(:)']*neuronDecoder.H;
     
     % implement static non-linearity
-    if isfield(neuronDecoder,'P') % do we have non-static linearities
+    if isfield(neuronDecoder,'P') && numel(neuronDecoder.P) >1 % do we have non-static linearities
         nonlinearity = zeros(1,length(emgPreds));
         for ii = 1:length(emgPreds)
             nonlinearity(ii) = polyval(neuronDecoder.P(:,ii),emgPreds(ii));
@@ -188,9 +188,9 @@ while ishandle(keepRunning)
     % -- insert here if needed --
     
     % Get the PW and amplitude
-    [stimPW, stimAmp] = EMG_to_stim(emgPreds, fes_params.bmi_fes_stim_params); % takes care of all of the mapping
+    [stimPW, stimAmp] = EMG_to_stim(emgPreds, fes_params.stim_params); % takes care of all of the mapping
     
-    if strcmp(fes_params.bmi_fes_stim_params.mode,'PW_modulation')
+    if strcmp(fes_params.stim_params.mode,'PW_modulation')
         tempdata = [toc(tStart),stimPW];
         fwrite(stimPointer,tempdata,'double');
     else
@@ -202,7 +202,7 @@ while ishandle(keepRunning)
     %% send stimulus params to wStim
     
     [stimCmd, channelList]    = stim_elect_mapping_wireless( stimPW, ...
-                                    stimAmp, fes_params.bmi_fes_stim_params );
+                                    stimAmp, fes_params.stim_params );
     for whichCmd = 1:length(stimCmd)
         wStim.set_stim(stimCmd(whichCmd), channelList);
     end
@@ -219,15 +219,15 @@ catch ME
     warning('Could not run stimulation loop, shutting down')
 end
 
-close_realtime_Wrapper(pRead,wStim,fes_params,stimFig,stimPointer,predPointer,spPointer);
+close_realtime_Wrapper(pRead,wStim,fes_params,stimFig,stimPointer,predPointer,spPointer,tsPointer);
 
 end
 
 
 %%
-function close_realtime_Wrapper(pRead,wStim,fes_params,stimFig,stimPointer,predPointer,spPointer)
+function close_realtime_Wrapper(pRead,wStim,fes_params,stimFig,stimPointer,predPointer,spPointer,tsPointer)
 
-if exist(stimFig)
+if ishandle(stimFig.fh)
     close(stimFig.fh)
 end
 
@@ -255,18 +255,18 @@ if exist('stimPointer') & exist('predPointer') & exist('spPointer')
     
     % Organize all of the EMG data
     EMGs = struct('Name',[],'BinLength',[],'Preds',[],'ts',[]);
-    EMGs.Name = fes_params.bmi_fes_stim_params.muscles;
-    EMGs.BinLength = fes_params.emg_decoder.binsize;
+    EMGs.Name = fes_params.stim_params.muscles;
+    EMGs.BinLength = fes_params.decoder.binsize;
     EMGs.Preds = fread(predPointer,predFileInfo.bytes,'double');
-    EMGs.Preds = reshape(EMGs.Preds,numel(fes_params.bmi_fes_stim_params.muscles)+1,predFileInfo.bytes/numel(fes_params.bmi_fes_stim_params.muscles)+1);
+    EMGs.Preds = reshape(EMGs.Preds,numel(fes_params.stim_params.muscles)+1,predFileInfo.bytes/numel(fes_params.stim_params.muscles)+1);
     EMGs.ts = EMGs.Preds(:,1);
     EMGs.Preds = EMGs.Preds(:,2:end);
     
     % Organize all the Stim Params
     Stims = struct('Name',[],'Vals',[],'ts',[]);
-    Stims.Name = fes_params.bmi_fes_stim_params.muscles;
+    Stims.Name = fes_params.stim_params.muscles;
     Stims.Vals = fread(stimPointer,stimFileInfo.bytes,'double');
-    Stims.Vals = reshape(Stims.Vals,numel(fes_params.bmi_fes_stim_params.muscles)+1,stimFileInfo.bytes/numel(fes_params.bmi_fes_stim_params.muscles)+1);
+    Stims.Vals = reshape(Stims.Vals,numel(fes_params.stim_params.muscles)+1,stimFileInfo.bytes/numel(fes_params.stim_params.muscles)+1);
     Stims.ts = Stims.Vals(:,1);
     Stims.Vals = Stims.Vals(:,2:end);
     
@@ -288,6 +288,7 @@ if exist('stimPointer') & exist('predPointer') & exist('spPointer')
     % close all of the files
     % (do we want to delete the binary files?)
     fclose(spPointer); fclose(stimPointer); fclose(predPointer);
+    fclose(tsPointer);
     
 end
     

@@ -24,24 +24,24 @@ end
 fileExt = strsplit(fileName,'.');
 fileExt = fileExt{end};
 
-if strcmp(fileExt,'.plx')
+if strcmp(fileExt,'plx')
     binParams = struct('NormData',true);
-    [emgDataBin,~] = load_plexondata_EMG(fileName,binParams);
+    [emgDataBin,emgData] = load_plexondata_EMG(fileName,binParams);
     chans = [1:16,33:48];
     spikes = {};
     binnedFiring = zeros(size(emgDataBin,1),32);
     for ii = 1:length(chans)
-        spikes{ii} = plx_ts(filename,chans(ii),0)
-        binnedFiring(:,ii) = histcounts(spikes{ii},'BinEdges',[emgDataBin(:,1),emgDataBin(end,1)+.05]);
+        [~,spikes{ii}] = plx_ts(fileName,chans(ii),0);
+        binnedFiring(:,ii) = histcounts(spikes{ii},'BinEdges',[emgDataBin(:,1);emgDataBin(end,1)+.05])*20;
     end
     
     binnedData = struct('emgdatabin',emgDataBin(:,2:end),'spikeratedata',binnedFiring,...
-        'neuronIDs',chans);
+        'neuronIDs',chans','timeframe',emgDataBin(:,1),'emgguide',emgData.channel);
     buildModelParams = struct('UseAllInputs',true,'PredEMGs',true,'plotflag',true);
     neuronDecoder = BuildModel(binnedData,buildModelParams);
     
     
-elseif strcmp(fileExt,'.mat')
+elseif strcmp(fileExt,'mat')
     load(fileName);
     if ~exist('neuronDecoder','var')
         error('A variable named neuronDecoder does not exist in the supplied file')

@@ -39,7 +39,7 @@ emgData.freq = [];
 EMGList = {}; % EMG names
 chanNums = []; % channel number -- 0 based (gotta match that plexon!)
 for ii = 1:size(names,1) % there's gotta be a better way!
-    if any(strfind(names(ii,:),'EMG-'))
+    if any(strfind(names(ii,:),'EMG-'))&& ~any(strfind(names(ii,:),'EMG-GND'))
 
         EMGList{end+1} = names(ii,[names(ii,:)~=char(0)]); % save it into the list of EMGs
         chanNums(end+1) = ii-1;
@@ -49,7 +49,7 @@ end
     
 for channel = 1:length(EMGList) % for each channel labeled 'EMG-'
     %import data
-    [adfreq, ~, ts, ~, ad] = plx_ad_v([filename], EMGList{channel});
+    [adfreq, ~, ts, ~, ad] = plx_ad_v(filename, EMGList{channel});
     %if there is data on a channel, add it to the data structure
     if ad~=-1
         disp([EMGList{channel} ' contains data, saving to structure'])

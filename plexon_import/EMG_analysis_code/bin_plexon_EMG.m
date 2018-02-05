@@ -86,4 +86,6 @@ end
         emgdatabin(emgdatabin>1) = 1; % set everything greater than 1 to 1
     end
     
+    emgdatabin = [timeframe,emgdatabin];
+    
 end
