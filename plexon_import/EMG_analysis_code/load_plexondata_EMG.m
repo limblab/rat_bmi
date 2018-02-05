@@ -1,4 +1,6 @@
 function [emgDataBin, emgData] = load_plexondata_EMG(filename,varargin)
+% [emgDataBin, emgData] = load_plexondata_EMG(filename,varargin)
+%
 %  --- load_plexondata_EMG ---
 % Loads EMG data from a plexon file into a matlab structure and a binned
 % matlab structure.
@@ -9,7 +11,7 @@ function [emgDataBin, emgData] = load_plexondata_EMG(filename,varargin)
 %    binsize            bin size in seconds     [.05]
 %    EMG_hp             EMG high pass filter corner in Hz [50]
 %    EMG_lp             EMG low pass filter corner in Hz [10]
-%    defaultNormalize   normalize the EMGs? [false]
+%    NormData           normalize the EMGs? [false]
 %
 % - Output -
 % emgdatabin        Structure containing binned EMG data
@@ -56,7 +58,13 @@ for channel = 1:length(EMGList) % for each channel labeled 'EMG-'
         emgData.channel(end+1) = chanNums(channel); % Analog channel name
         emgData.freq = adfreq; %It will be overwritten, but all channels will have been collected at same freq
         emgData.name(end+1) = EMGList(channel); % EMG channel name
-    
+        
+%         if params.Normalize % normalize the emg by the 99th percentile, cap at 99th quantile
+%             nineNine = quantile(emgData.data(:,end),.99);
+%             emgData.data(:,end) = emgData.data(:,end)/nineNine; % normalize by 99th quantile
+%             emgData.data(emgData.data(:,end)>1,end) = 1; % cap at 1
+%         end
+%     
     else
     warning([EMGList{channel} ' doesn''t have any data, skipping...'])    
     end

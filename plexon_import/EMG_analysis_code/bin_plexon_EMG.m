@@ -83,6 +83,7 @@ end
             EMGNormRatio = prctile(emgdatabin(:,i),99);
             emgdatabin(:,i) = emgdatabin(:,i)/EMGNormRatio;
         end
+        emgdatabin(emgdatabin>1) = 1; % set everything greater than 1 to 1
     end
     
 end
