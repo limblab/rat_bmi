@@ -1,4 +1,4 @@
-function realtime_Wrapper(fes_params)
+function ME = realtime_Wrapper(fes_params)
 % --- realtime_Wrapper(fes_params) ---
 %
 % A single function that will take care of running all of code necessary
@@ -20,8 +20,7 @@ function realtime_Wrapper(fes_params)
 % fes_params        structure or name for file with stimulation params. 
 %
 % -- Outputs --
-% None directly through the function, though it will store all relevant
-% recordings together
+% Spits out the error stack if you want it
 %
 % 
 % Authors: Bryan Yoder, Kevin Bodkin
@@ -44,7 +43,7 @@ function realtime_Wrapper(fes_params)
 %
 % TODO:
 %   - Fix issues with PL_GetPars (BY)
-%   - Start external plexon recording automatically (KB)
+%   - Start external plexon recording automatically, or synch
 %   - preallocate ts list for speed (BY) // what does this mean? KB
 %   - Rewrite the initialization routine to remove errors (KB)
 %
@@ -55,15 +54,15 @@ function realtime_Wrapper(fes_params)
 
 %% Load StimParams
 % load StimParams, use defaults if not specified
-% try
-    if ~exist('fes_params')
+try
+    if ~exist('fes_params','var')
         fes_params = struct(); % set up an empty structure to pass in
     end
     
-%     fes_params = fes_params_defaults(fes_params);
-% catch ME
-%     error(ME) % kick us out if necessary
-% end
+    fes_params = fes_params_defaults(fes_params);
+catch ME
+    error(ME) % kick us out if necessary
+end
 
 %% Set up stim and plexon/Blackrock
 % handles for cortical connection and Ripple objects
@@ -71,7 +70,8 @@ try
     if strcmp(fes_params.cort_source,'Plexon')
         [wStim,pRead] = setupCommunication(fes_params);
     elseif strcmp(fes_params.cort_source,'Blackrock')
-        [wStim,cbus] = setupCommunication(fes_params);
+%         [wStim,cbus] = setupCommunication(fes_params);
+        error('The cerebus is not yet supported. Sorry bruv');
     end
 catch ME
     close_realtime_Wrapper(pRead,wStim)
@@ -85,7 +85,7 @@ keepRunning = msgbox('Press ''ok'' to quit'); % handle to end stimulation
 
 if fes_params.display_plots
     stimFig.fh = figure('Name','FES Commands'); % setup visualization of stimulation
-    stimFig = stim_fig(stimFig,[],[],fes_params.stim_params,'init'); % using the old stim fig code
+    stimFig = stim_fig(stimFig,[],[],fes_params.fes_stim_params,'init'); % using the old stim fig code
 end
 
 
@@ -119,14 +119,14 @@ tStart = tic; % start timer
 tLoopOld = toc(tStart); % initial loop timer 
 neuronDecoder = fes_params.decoder;
 clear model;
-% catchTrialInd = randperm(100,fes_params.stim_params.perc_catch_trials); % which trials are going to be catch
+% catchTrialInd = randperm(100,fes_params.fes_stim_params.perc_catch_trials); % which trials are going to be catch
 binsize = fes_params.binsize; % because I'm lazy and don't feel like always typing this.
 
 
 drawnow; % take care of anything waiting to be executed, empty thread
 
-stimAmp = zeros(length(fes_params.stim_params.PW_min));
-stimPW = zeros(length(fes_params.stim_params.PW_min));
+stimAmp = zeros(length(fes_params.fes_stim_params.PW_min));
+stimPW = zeros(length(fes_params.fes_stim_params.PW_min));
 
 
 fRates = zeros(round(neuronDecoder.fillen/neuronDecoder.binsize),length(neuronDecoder.neuronIDs));
@@ -140,7 +140,7 @@ while ishandle(keepRunning)
     tLoop = tLoopNew - tLoopOld;
     
     if ((tLoop+.02) < binsize) && fes_params.display_plots % if we have more than 20 ms extra time, update the stim figure
-        stimFig = stim_fig(stimFig,stimPW,stimAmp,fes_params.stim_params,'exec');
+        stimFig = stim_fig(stimFig,stimPW,stimAmp,fes_params.fes_stim_params,'exec');
         tWaitStart = tic; % Wait loop time
         while (toc(tWaitStart) + tLoop) < binsize
             drawnow;    % empty process
@@ -188,9 +188,9 @@ while ishandle(keepRunning)
     % -- insert here if needed --
     
     % Get the PW and amplitude
-    [stimPW, stimAmp] = EMG_to_stim(emgPreds, fes_params.stim_params); % takes care of all of the mapping
+    [stimPW, stimAmp] = EMG_to_stim(emgPreds, fes_params.fes_stim_params); % takes care of all of the mapping
     
-    if strcmp(fes_params.stim_params.mode,'PW_modulation')
+    if strcmp(fes_params.fes_stim_params.mode,'PW_modulation')
         tempdata = [toc(tStart),stimPW];
         fwrite(stimPointer,tempdata,'double');
     else
@@ -202,7 +202,7 @@ while ishandle(keepRunning)
     %% send stimulus params to wStim
     
     [stimCmd, channelList]    = stim_elect_mapping_wireless( stimPW, ...
-                                    stimAmp, fes_params.stim_params );
+                                    stimAmp, fes_params.fes_stim_params );
     for whichCmd = 1:length(stimCmd)
         wStim.set_stim(stimCmd(whichCmd), channelList);
     end
@@ -231,7 +231,7 @@ if ishandle(stimFig.fh)
     close(stimFig.fh)
 end
 
-if exist('stimPointer') & exist('predPointer') & exist('spPointer')
+if exist('stimPointer','var') & exist('predPointer','var') & exist('spPointer','var')
 % get the filenames for the binary files, reopen them for reading, and
 % store all of the data into a matlab structure, then save it.
 
@@ -255,18 +255,18 @@ if exist('stimPointer') & exist('predPointer') & exist('spPointer')
     
     % Organize all of the EMG data
     EMGs = struct('Name',[],'BinLength',[],'Preds',[],'ts',[]);
-    EMGs.Name = fes_params.stim_params.muscles;
+    EMGs.Name = fes_params.fes_stim_params.muscles;
     EMGs.BinLength = fes_params.decoder.binsize;
     EMGs.Preds = fread(predPointer,predFileInfo.bytes,'double');
-    EMGs.Preds = reshape(EMGs.Preds,numel(fes_params.stim_params.muscles)+1,predFileInfo.bytes/numel(fes_params.stim_params.muscles)+1);
+    EMGs.Preds = reshape(EMGs.Preds,numel(fes_params.fes_stim_params.muscles)+1,predFileInfo.bytes/numel(fes_params.fes_stim_params.muscles)+1);
     EMGs.ts = EMGs.Preds(:,1);
     EMGs.Preds = EMGs.Preds(:,2:end);
     
     % Organize all the Stim Params
     Stims = struct('Name',[],'Vals',[],'ts',[]);
-    Stims.Name = fes_params.stim_params.muscles;
+    Stims.Name = fes_params.fes_stim_params.muscles;
     Stims.Vals = fread(stimPointer,stimFileInfo.bytes,'double');
-    Stims.Vals = reshape(Stims.Vals,numel(fes_params.stim_params.muscles)+1,stimFileInfo.bytes/numel(fes_params.stim_params.muscles)+1);
+    Stims.Vals = reshape(Stims.Vals,numel(fes_params.fes_stim_params.muscles)+1,stimFileInfo.bytes/numel(fes_params.fes_stim_params.muscles)+1);
     Stims.ts = Stims.Vals(:,1);
     Stims.Vals = Stims.Vals(:,2:end);
     

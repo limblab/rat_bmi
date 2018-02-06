@@ -1,4 +1,4 @@
-function [emgDataBin, emgData] = load_plexondata_EMG(filename,varargin)
+function [emgDataBin, emgData, timestamps] = load_plexondata_EMG(filename,varargin)
 % [emgDataBin, emgData] = load_plexondata_EMG(filename,varargin)
 %
 %  --- load_plexondata_EMG ---
@@ -14,9 +14,10 @@ function [emgDataBin, emgData] = load_plexondata_EMG(filename,varargin)
 %    NormData           normalize the EMGs? [false]
 %
 % - Output -
-% emgdatabin        Structure containing binned EMG data
-%       
+% emgdatabin        Matrix containing binned EMG data       
 % emgdata           Structure containing raw EMG data
+% timestamps        timestamps of binned EMG data
+
 
 % -- Changelog --
 %   
@@ -30,7 +31,7 @@ emgDataBin = [];
 emgData = struct(); 
 emgData.channel = []; %array of channel numbers
 emgData.name = {}; % Cell array of channel names -- this will check that these are EMG channels
-emgData.timestamps = []; %time stamps
+emgData.timestamps = []; %time stamps of full freq EMG data
 emgData.data = []; %a/d values for those channels
 emgData.freq = [];
 
@@ -77,12 +78,13 @@ if ~isempty(emgData.channel)
     
     try
         if exist('params')
-            emgDataBin = bin_plexon_EMG(emgData, params);
+            [emgDataBin,timestamps] = bin_plexon_EMG(emgData, params);
         else
-            emgDataBin = bin_plexon_EMG(emgData);
+            [emgDataBin,timestamps] = bin_plexon_EMG(emgData);
         end
     catch
         emgDataBin = [];
+        timestamps = [];
         warning('Could not bin EMGs');
         return;
     end

@@ -1,4 +1,4 @@
-function [emgdatabin] = bin_plexon_EMG(emg_data, params)
+function [emgdatabin, timeframe] = bin_plexon_EMG(emg_data, params)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Want to assemble the emg data into a single
@@ -75,17 +75,15 @@ for E=1:numEMGs
     emgdatabin(:,E) = interp1(emg_data.data(emgtimebins,1), tempEMG, timeframe,'linear','extrap');
 end
 
-    %Normalize EMGs        
-    if params.NormData
-        for i=1:numEMGs
+%Normalize EMGs        
+if params.NormData
+    for i=1:numEMGs
 %             emgdatabin(:,i) = emgdatabin(:,i)/max(emgdatabin(:,i));
-            %dont use the max because of artefact, use 99% percentile
-            EMGNormRatio = prctile(emgdatabin(:,i),99);
-            emgdatabin(:,i) = emgdatabin(:,i)/EMGNormRatio;
-        end
-        emgdatabin(emgdatabin>1) = 1; % set everything greater than 1 to 1
+        %dont use the max because of artefact, use 99% percentile
+        EMGNormRatio = prctile(emgdatabin(:,i),99);
+        emgdatabin(:,i) = emgdatabin(:,i)/EMGNormRatio;
     end
-    
-    emgdatabin = [timeframe,emgdatabin];
+    emgdatabin(emgdatabin>1) = 1; % set everything greater than 1 to 1
+end
     
 end

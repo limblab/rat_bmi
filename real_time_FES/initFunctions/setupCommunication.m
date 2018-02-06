@@ -24,7 +24,14 @@ pause(0.05);
 
 %% Ripple        
 
-stim_params = struct('dbg_lvl',1,'comm_timeout_ms',15,'blocking',false,'zb_ch_page',2,'serial_string',bmi_params.stim_params.serial_string)
+stim_params = struct('dbg_lvl',1,'comm_timeout_ms',1000,'blocking',false,'zb_ch_page',2,'serial_string',bmi_params.fes_stim_params.serial_string)
+flds = fields(stim_params)
+for ii = 1:length(flds) % load non-default parameters as necessary from input structure
+    if isfield(bmi_params.fes_stim_params,flds{ii})
+        stim_params.(flds{ii}) = bmi_params.fes_stim_params.(flds{ii});
+    end
+end
+
 wStim  = wireless_stim(stim_params);
 pause(.1)
 drawnow
@@ -32,7 +39,7 @@ drawnow
 try
     % Switch to the folder that contains the calibration file
     cur_dir = pwd;
-    cd( bmi_params.stim_params.path_cal_ws );
+    cd( bmi_params.fes_stim_params.path_cal_ws );
 
     % see how old the calibration file is. If it's over a week old,
     % make a new one
@@ -65,7 +72,7 @@ try
     % mode] ...)
     % this will work only if the bmi and bmi_stim folders are on
     % the path. HAHAHA
-    setup_wireless_stim_fes(wStim, bmi_params.stim_params);
+    setup_wireless_stim_fes(wStim, bmi_params.fes_stim_params);
 
 % if something went wrong close communication and quit
 catch ME
