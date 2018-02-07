@@ -20,26 +20,26 @@ function neuronDecoder = plexon_Build_Model(varargin)
 
 % open uiget as needed, error check
 params = struct('binSize',50,'filLen',500,'polynomial',0,'chans',[(1:32)',zeros(32,1)]);
-if nargin == 0
+for ii = 1:nargin
+    switch class(varargin{ii})
+        case 'char'
+            fileName = varargin{ii};
+        case 'struct'
+            flds = fieldnames(varargin{ii});
+            for jj = 1:length(flds)
+                params.(flds{jj}) = varargin{ii}.(flds{jj}); % load in any and all parameters
+            end
+        otherwise
+            error('%s is not a valid parameter. Read the help and try again',varargin{ii})
+    end
+end
+
+if ~exist('fileName','var') % load a file if one wasn't given
     [fileName, pathName] = uigetfile({...
         '*.plx','Plexon Recorded';...
         '*.mat','Saved neuronDecoder structure'},...
         'MultiSelect','off');
     fileName = fullfile(pathName,fileName);
-elseif nargin > 1
-    for ii = 1:length(nargin)
-        switch class(varargin{ii})
-            case 'char'
-                fileName = varargin{ii};
-            case 'struct'
-                flds = fieldnames(varargin{ii});
-                for jj = 1:length(flds)
-                    params.(flds{jj}) = varargin{ii}.(flds{jj}); % load in any and all parameters
-                end
-            otherwise
-                error('%s is not a valid parameter. Read the help and try again',varargin{ii})
-        end
-    end
 end
 
 fileExt = strsplit(fileName,'.');
@@ -71,5 +71,6 @@ elseif strcmp(fileExt,'mat')
 else
     error('That file name is not valid for this function.')
 end
-    
-    
+
+
+end

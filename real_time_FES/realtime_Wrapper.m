@@ -279,8 +279,8 @@ if exist('stimPointer','var') & exist('predPointer','var') & exist('spPointer','
     Spikes.fRate = Spikes.fRate(:,2:end);
     
     % Save all the info in a file together, and the stimulation params
-    storageFN = [fes_params.save_dir, filesep, 'recordedData.mat'];
-    paramsFN = [fes_params.save_dir, filesep, 'params'];
+    storageFN = [fes_params.save_name, '_recordedData.mat'];
+    paramsFN = [fes_params.save_name, '_params'];
     save(storageFN,'Spikes','Stims','EMGs');
     save(paramsFN,'fes_params');
     
