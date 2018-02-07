@@ -42,10 +42,8 @@ function ME = realtime_Wrapper(fes_params)
 %
 %
 % TODO:
-%   - Fix issues with PL_GetPars (BY)
 %   - Start external plexon recording automatically, or synch
-%   - preallocate ts list for speed (BY) // what does this mean? KB
-%   - Rewrite the initialization routine to remove errors (KB)
+%   - stim_elect_mapping_wireless -- write for amplitude modulation
 %
 %
 %
@@ -120,7 +118,7 @@ tLoopOld = toc(tStart); % initial loop timer
 neuronDecoder = fes_params.decoder;
 clear model;
 % catchTrialInd = randperm(100,fes_params.fes_stim_params.perc_catch_trials); % which trials are going to be catch
-binsize = fes_params.binsize; % because I'm lazy and don't feel like always typing this.
+binsize = fes_params.binsize/1000; % because I'm lazy and don't feel like always typing this.
 
 
 drawnow; % take care of anything waiting to be executed, empty thread
@@ -133,7 +131,7 @@ fRates = zeros(round(neuronDecoder.fillen/neuronDecoder.binsize),length(neuronDe
 
 try
 while ishandle(keepRunning)
-    
+    fprintf('.\n')
     
     %% wait necessary time for loop
     tLoopNew = toc(tStart);
@@ -164,7 +162,7 @@ while ishandle(keepRunning)
     fwrite(spPointer,tempdata,'double');
     
     
-    %% predict from plexon data, store in csv
+    %% predict from plexon data, store
     emgPreds = [1 fRates(:)']*neuronDecoder.H;
     
     % implement static non-linearity
@@ -176,7 +174,7 @@ while ishandle(keepRunning)
         emgPreds = nonlinearity;
     end
     
-    % save these into the csv -- change to save()
+    % save these into data file
     tempdata = [tLoopOld,emgPreds];
     fwrite(predPointer,tempdata,'double');
     
@@ -257,30 +255,30 @@ if exist('stimPointer','var') & exist('predPointer','var') & exist('spPointer','
     EMGs = struct('Name',[],'BinLength',[],'Preds',[],'ts',[]);
     EMGs.Name = fes_params.fes_stim_params.muscles;
     EMGs.BinLength = fes_params.decoder.binsize;
-    EMGs.Preds = fread(predPointer,predFileInfo.bytes,'double');
-    EMGs.Preds = reshape(EMGs.Preds,numel(fes_params.fes_stim_params.muscles)+1,predFileInfo.bytes/numel(fes_params.fes_stim_params.muscles)+1);
-    EMGs.ts = EMGs.Preds(:,1);
-    EMGs.Preds = EMGs.Preds(:,2:end);
+    EMGs.Preds = fread(predPointer,predFileInfo.bytes/8,'double');
+    EMGs.Preds = reshape(EMGs.Preds,numel(fes_params.fes_stim_params.muscles)+1,predFileInfo.bytes/(8*(numel(fes_params.fes_stim_params.muscles)+1)));
+    EMGs.ts = EMGs.Preds(1,:)';
+    EMGs.Preds = EMGs.Preds(2:end,:)';
     
     % Organize all the Stim Params
     Stims = struct('Name',[],'Vals',[],'ts',[]);
     Stims.Name = fes_params.fes_stim_params.muscles;
-    Stims.Vals = fread(stimPointer,stimFileInfo.bytes,'double');
-    Stims.Vals = reshape(Stims.Vals,numel(fes_params.fes_stim_params.muscles)+1,stimFileInfo.bytes/numel(fes_params.fes_stim_params.muscles)+1);
-    Stims.ts = Stims.Vals(:,1);
-    Stims.Vals = Stims.Vals(:,2:end);
+    Stims.Vals = fread(stimPointer,stimFileInfo.bytes/8,'double');
+    Stims.Vals = reshape(Stims.Vals,numel(fes_params.fes_stim_params.muscles)+1,stimFileInfo.bytes/(8*(numel(fes_params.fes_stim_params.muscles)+1)));
+    Stims.ts = Stims.Vals(1,:)';
+    Stims.Vals = Stims.Vals(2:end,:)';
     
     % And finally, spikes
     Spikes = struct('Electrode',[],'fRate',[],'ts',[]);
     Spikes.Electrode = fes_params.neuronIDs;
-    Spikes.fRate = fread(spPointer,spFileInfo.bytes,'double');
-    Spikes.fRate = reshape(Spike.fRate,fes_params.n_neurons+1,spFileInfo.bytes/fes_paramsn_neurons+1);
-    Spikes.ts = Spikes.fRate(:,1);
-    Spikes.fRate = Spikes.fRate(:,2:end);
+    Spikes.fRate = fread(spPointer,spFileInfo.bytes/8,'double');
+    Spikes.fRate = reshape(Spikes.fRate,size(fes_params.neuronIDs,1)+1,spFileInfo.bytes/(8*(size(fes_params.neuronIDs,1)+1)));
+    Spikes.ts = Spikes.fRate(1,:)';
+    Spikes.fRate = Spikes.fRate(2:end,:)';
     
     % Save all the info in a file together, and the stimulation params
-    storageFN = [fes_params.save_name, '_recordedData.mat'];
-    paramsFN = [fes_params.save_name, '_params'];
+    storageFN = [fes_params.save_dir, filesep, fes_params.save_name, '_recordedData.mat'];
+    paramsFN = [fes_params.save_dir, filesep, fes_params.save_name, '_params'];
     save(storageFN,'Spikes','Stims','EMGs');
     save(paramsFN,'fes_params');
     

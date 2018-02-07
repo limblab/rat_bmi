@@ -1,6 +1,6 @@
 function new_spikes = get_New_PlexData(s, params, tsPointer)
 
-new_spikes = zeros(length(params.n_neurons),1);
+new_spikes = zeros(1,size(params.neuronIDs,1));
 % get data
 [n, ts_new] = PL_GetTS(s);
 fwrite(tsPointer,ts_new,'double');
