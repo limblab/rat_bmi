@@ -3,7 +3,7 @@ function new_spikes = get_New_PlexData(s, params, tsPointer)
 new_spikes = zeros(length(params.n_neurons),1);
 % get data
 [n, ts_new] = PL_GetTS(s);
-fwrite(tsPointer,ts_new,'double');
+fwrite(tsPointer,ts_new','double'); % make it so that the array is stored by row, rather than by column.
 
 % check if data makes sense
 
@@ -18,16 +18,14 @@ if n > 0
 end
 
 % want to worry about sorted neurons? will have to change this...
-for i = params.neuronIDs(:,1).'
+for i = params.neuronIDs(:,1)
 %     if i(2) % Get multi-unit activity
-        new_spikes(params.neuronIDs(:,1) == i) = sum(i == ts_new(:,2))/params.binsize;
+        new_spikes(params.neuronIDs(:,1) == i) = sum(i == ts_new(:,2))/params.binsize; % this won't actually be a proper bin size if time elapsed > 50 ms
 %     else    % Get individual units
 %         
 %     end
 end
 
-
-% firing_rates = [new_spikes'; data.spikes(1:end-1,:)];
 
 % remove any high frequency noise
 if any(new_spikes > 400)

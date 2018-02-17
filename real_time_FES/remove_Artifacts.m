@@ -1,10 +1,9 @@
 function clean_ts = remove_Artifacts(spikes, params)
-%UNTITLED2 Summary of this function goes here
-%   Detailed explanation goes here
+%remove_Artifacts 
 
 %Params for artifact removal
 max_nbr_spikes         = 10;
-reject_bin_size     = 0.001;
+reject_bin_size     = 0.001; % if 10 channels fire in less than 1 ms
 
 %Matrix is ordered by ts, independent of channel
 %Roll over list with window size 'reject_bin_size' looking for at least

@@ -40,6 +40,12 @@ else
 end
 
 
+if params.binsize>1
+    warning('Binsize was greater than 1. Switching from ms to seconds')
+    params.binsize = params.binsize/1000;
+end
+
+
 emgsamplerate = emg_data.freq;   %Rate at which emg data were actually acquired.
 emg_times = single(0:1/emgsamplerate:(size(emg_data.data,1)-1)/emgsamplerate);
 
@@ -50,7 +56,7 @@ timeframe = (0:params.binsize:emg_times(end)-params.binsize)';
 numberbins = length(timeframe);
 
 numEMGs = length(emg_data.channel);
-emgtimebins = 1:1:length(emg_data.data(:,1));
+emgtimebins = 1:length(emg_data.data(:,1));
 
 %Pre-allocate matrix for binned EMG 
 emgdatabin = zeros(numberbins,numEMGs);

@@ -25,6 +25,14 @@ function [emgDataBin, emgData, timestamps] = load_plexondata_EMG(filename,vararg
 % documentation, changed  the display and warnings a little -- KLB 2018.01.22
 
 
+if nargin>1
+    params = varargin{1};
+    if ~isstruct(params)
+        error('Input parameters must be formatted in a structure');
+    end
+end
+
+
 emgDataBin = [];
 
 %set up the EMG data structure
@@ -60,12 +68,6 @@ for channel = 1:length(EMGList) % for each channel labeled 'EMG-'
         emgData.freq = adfreq; %It will be overwritten, but all channels will have been collected at same freq
         emgData.name(end+1) = EMGList(channel); % EMG channel name
         
-%         if params.Normalize % normalize the emg by the 99th percentile, cap at 99th quantile
-%             nineNine = quantile(emgData.data(:,end),.99);
-%             emgData.data(:,end) = emgData.data(:,end)/nineNine; % normalize by 99th quantile
-%             emgData.data(emgData.data(:,end)>1,end) = 1; % cap at 1
-%         end
-%     
     else
     warning([EMGList{channel} ' doesn''t have any data, skipping...'])    
     end

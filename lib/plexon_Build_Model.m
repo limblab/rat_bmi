@@ -9,8 +9,8 @@ function neuronDecoder = plexon_Build_Model(varargin)
 % -- Optional Inputs --
 % filename          : Character array with filename
 % params            : Struct with parameters inside
-%       binSize     : Binsize in ms         [50]
-%       filLen      : Filter length in ms   [500]
+%       binSize     : Binsize in seconds    [.05]
+%       filLen      : Filter length in seconds   [.5]
 %       filtType    : Allows the function to build different types of
 %                          filters, to be implemented [Wiener]
 %       polynomial  : Add a static nonlinearity to the Wiener filter? [0]
@@ -19,7 +19,7 @@ function neuronDecoder = plexon_Build_Model(varargin)
 
 
 % open uiget as needed, error check
-params = struct('binSize',50,'filLen',500,'polynomial',0,'chans',[(1:32)',zeros(32,1)]);
+params = struct('binSize',.05,'filLen',.5,'polynomial',0,'chans',[(1:32)',zeros(32,1)]);
 for ii = 1:nargin
     switch class(varargin{ii})
         case 'char'
@@ -45,6 +45,8 @@ end
 fileExt = strsplit(fileName,'.');
 fileExt = fileExt{end};
 
+
+
 if strcmp(fileExt,'plx')
     binParams = struct('NormData',true,'binsize',params.binSize);
     [emgDataBin,emgData,binTimestamps] = load_plexondata_EMG(fileName,binParams);
@@ -58,9 +60,10 @@ if strcmp(fileExt,'plx')
     binnedData = struct('emgdatabin',emgDataBin,'spikeratedata',binnedFiring,...
         'neuronIDs',params.chans,'timeframe',binTimestamps,'emgguide',emgData.channel);
     buildModelParams = struct('UseAllInputs',true,'PredEMGs',true,'plotflag',...
-        true,'fillen',params.filLen/1000,'PolynomialOrder',params.polynomial);
+        true,'fillen',params.filLen,'PolynomialOrder',params.polynomial);
     
     [neuronDecoder,predData] = BuildModel(binnedData,buildModelParams);
+    neuronDecoder.fileName = fileName; % remember, this is for posterity's sake.
     
     
 elseif strcmp(fileExt,'mat')
