@@ -18,7 +18,7 @@ if n > 0
 end
 
 % want to worry about sorted neurons? will have to change this...
-for i = params.neuronIDs(:,1)
+for i = params.neuronIDs(:,1)'
 %     if i(2) % Get multi-unit activity
         new_spikes(params.neuronIDs(:,1) == i) = sum(i == ts_new(:,2))/params.binsize; % this won't actually be a proper bin size if time elapsed > 50 ms
 %     else    % Get individual units

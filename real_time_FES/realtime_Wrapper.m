@@ -118,7 +118,7 @@ tLoopOld = toc(tStart); % initial loop timer
 neuronDecoder = fes_params.decoder;
 clear model;
 % catchTrialInd = randperm(100,fes_params.fes_stim_params.perc_catch_trials); % which trials are going to be catch
-binsize = fes_params.binsize/1000; % because I'm lazy and don't feel like always typing this.
+binsize = fes_params.binsize; % because I'm lazy and don't feel like always typing this.
 
 
 drawnow; % take care of anything waiting to be executed, empty thread
@@ -128,6 +128,9 @@ stimPW = zeros(length(fes_params.fes_stim_params.PW_min));
 
 
 fRates = zeros(round(neuronDecoder.fillen/neuronDecoder.binsize),length(neuronDecoder.neuronIDs));
+
+ME = -1;
+profile on;
 
 try
 while ishandle(keepRunning)
@@ -297,6 +300,9 @@ wStim.delete();
 fclose(instrfind);
 instrreset % this seems to work better at purging the list of connected serial ports
 
+
+
+profile viewer
 'Exited Properly'
 
 end
