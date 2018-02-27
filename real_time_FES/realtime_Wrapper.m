@@ -36,7 +36,7 @@ function ME = realtime_Wrapper(fes_params)
 %   I've set up the closing function to open all of the binary files and
 %   re-store the data and parameters as .mat file. Should we delete the
 %   binary files afterwards?
-%
+%   
 %
 % TIPS:
 %
