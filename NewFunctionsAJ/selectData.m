@@ -22,6 +22,18 @@ SelectedKinematicData.kinmeasures = Kinmetric;
 SelectedKinematicData.labels = labels;
 timeframe = kinematicData.Binnedtimeframe;
 timeframe = timeframe';
+%%
+%%% This is only for N9 trials where you want chop off the last few chunks of data
+[KINdat, KINtimes] = get_CHN_data(kinematicData,'binned');
+KINtimes = KINtimes(1:8900); % added for N9 trial
+KINdat = KINdat(1:8900,:); % added for N9 trial
+[Kinmetric,labels] = find_joint_angles(KINdat,kinematicData.KinMatrixLabels);
+SelectedKinematicData.kindata = KINdat;
+SelectedKinematicData.kinmeasures = Kinmetric;
+SelectedKinematicData.labels = labels;
+kinematicData.Binnedtimeframe = kinematicData.Binnedtimeframe(1:8900);
+timeframe = kinematicData.Binnedtimeframe;
+timeframe = timeframe';
 %% 
 %%%%% look at the emg data
 ts = mytimeseries;
@@ -115,40 +127,42 @@ ind = find((outtimes >= req_times(1)) & (outtimes <= req_times(2)));
 SelectedEMGData.data = outdata(ind,:);
 SelectedEMGData.timeframe = outtimes(ind);   
 %%%%%%%%%
-
-%% Field Channels
+%%
+%%Field Channels
 
 %%%% look at the field data
 %%%%%%%%    1. Determine artifact times to be removed
 %%%%%%%%    2. Determine bad field channels
 
 %Plot Field Channels
-ts = mytimeseries;
-ts.Time = fielddata.timeframe;
-ts.Data = fielddata.data';
-nchan = size(ts.Data,2);
-initialize_ts_gui(ts);
-nchannels = size(fielddata.data',2);
-set_labels(cellstr(num2str((1:nchan)')));
-set_scales(.5*ones(nchan,1));
+% ts = mytimeseries;
+% ts.Time = fielddata.timeframe;
+% ts.Data = fielddata.data';
+% nchan = size(ts.Data,2);
+% initialize_ts_gui(ts);
+% nchannels = size(fielddata.data',2);
+% set_labels(cellstr(num2str((1:nchan)')));
+% set_scales(.5*ones(nchan,1));
 %enter bad field channels
 [badchan] = input('Select the bad field channels as [1,2..]: ');
 FieldCh2Use = setdiff(1:32,badchan); %idenify good channels
-LFPParams.data_ch = FieldCh2Use;
-fieldArtifactTimes = input('Field Artifact Times (start1 end1; start2 end2): ');
+LFPParams.data_ch = 1:length(FieldCh2Use);
+% fieldArtifactTimes = input('Field Artifact Times (start1 end1; start2 end2): ');
 
 %remove common average from good field channels
+fielddata.data = fielddata.data(FieldCh2Use,:);
 fielddata = do_LFPanalysis_funct_v2(fielddata, LFPParams);
 [FIELDdata, FIELDtimes] = get_CHN_data(fielddata,'binned CAR',timeframe');
 binnedFieldData = FIELDdata;
 
-binnedFieldDataClean = remove_synch_fields(binnedFieldData,timeframe,fieldArtifactTimes); %change remove_synch_spikes to get rid of finalDataSelection variable
-% [binnedFieldDataClean,ori_fielddata, removedFieldBins, nsd] = remove_field_artifacts(binnedFieldData,2); %change remove_synch_spikes to get rid of finalDataSelection variable
+[fielddata.data,fielddata.oridata, removedFieldBins, nsd] = remove_field_artifacts1(binnedFieldData,10,3); 
+% [fielddata.data,fielddata.oridata] = remove_synch_fields(binnedFieldData,timeframe,fieldArtifactTimes); %change remove_synch_spikes to get rid of finalDataSelection variable
 
-SelectedFieldData = binnedFieldDataClean;
-SelectedFieldDatastruct.cleanData = binnedFieldDataClean;
+SelectedFieldData = fielddata.data;
+
+SelectedFieldDatastruct.oriData = fielddata.oridata;
 SelectedFieldDatastruct.timeframe = FIELDtimes;
-SelectedFieldDatastruct.artifactTimesRemoved = fieldArtifactTimes;
+SelectedFieldDatastruct.artifactTimesRemoved = removedFieldBins;
 SelectedFieldDatastruct.FieldCh2Use = FieldCh2Use;
 
 %% Spike Data
@@ -176,8 +190,8 @@ nchan = size(APdat,2);
 % binnedSpikeDataClean = remove_synch_fields(binnedSpikeData,timeframe,fieldArtifactTimes); %change remove_synch_spikes to get rid of finalDataSelection variable
 
 %%
-cd('/Users/ambikasatish/Desktop/Miller Lab/matlab codes and data /rat_bmi-master/SelectedData_field');
-% save(strcat(standardFilename,'_s','.mat'),'SelectedEMGData','SelectedEMGChannelLabels','SelectedFieldData','SelectedSpikeData','SelectedKinematicData','timeframe','standardFilename');
-save(strcat(standardFilename,'_s','.mat'),'SelectedFieldData','SelectedKinematicData','timeframe','standardFilename');
+cd('/Users/ambikasatish/Desktop/Miller Lab/matlab codes and data /rat_bmi-master/SelectedDataAll');
+save(strcat(standardFilename,'_s1','.mat'),'SelectedEMGData','SelectedEMGChannelLabels','SelectedFieldData','SelectedFieldDatastruct','SelectedSpikeData','SelectedKinematicData','timeframe','standardFilename');
+% save(strcat(standardFilename,'_s','.mat'),'SelectedFieldData','SelectedKinematicData','timeframe','standardFilename');
 % close all;
 
