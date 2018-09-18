@@ -1,4 +1,4 @@
-function neuronDecoder = plexon_Build_Model(varargin)
+function [neuronDecoder,predData] = plexon_Build_Model(varargin)
 % function neuronDecoder = plexon_Build_Model({filename},{params})
 %
 % Builds a neural to EMG decoder from recorded plexon data. If no file name
@@ -19,7 +19,7 @@ function neuronDecoder = plexon_Build_Model(varargin)
 
 
 % open uiget as needed, error check
-params = struct('binSize',.05,'filLen',.5,'polynomial',0,'chans',[(1:32)',zeros(32,1)]);
+params = struct('binSize',.05,'filLen',.5,'polynomial',0,'chans',[([1:16 33:48])',zeros(32,1)]);
 for ii = 1:nargin
     switch class(varargin{ii})
         case 'char'

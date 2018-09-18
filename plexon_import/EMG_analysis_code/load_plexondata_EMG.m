@@ -48,7 +48,7 @@ emgData.freq = [];
 EMGList = {}; % EMG names
 chanNums = []; % channel number -- 0 based (gotta match that plexon!)
 for ii = 1:size(names,1) % there's gotta be a better way!
-    if any(strfind(names(ii,:),'EMG-'))&& ~any(strfind(names(ii,:),'EMG-GND'))
+    if any(strfind(names(ii,:),'EMG-'))&& ~any(strfind(names(ii,:),'EMG-GND1'))
 
         EMGList{end+1} = names(ii,[names(ii,:)~=char(0)]); % save it into the list of EMGs
         chanNums(end+1) = ii-1;

@@ -9,12 +9,12 @@ fwrite(tsPointer,ts_new','double'); % make it so that the array is stored by row
 
 if n > 0
     % If it covers too much time
-    if (ts_new(end,4) - ts_new(1,4) >= 0.05)   % talk about this number later
+    if (ts_new(end,4) - ts_new(1,4) >= 0.051)   % talk about this number later
        warning('Recieved spikes exceed bin time; interval: %f',ts_new(end,4) - ts_new(1,4))    
     end
 
     % remove stim artifacts
-%     ts_new = remove_Artifacts(ts_new, params);
+    ts_new = remove_Artifacts(ts_new, params);
 end
 
 % want to worry about sorted neurons? will have to change this...

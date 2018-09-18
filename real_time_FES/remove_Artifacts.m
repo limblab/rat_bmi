@@ -31,7 +31,7 @@ for i = length(artifacts):-1:1
 end
 
 %Artifacts output
-if length(artifacts) > 0
+if length(artifacts) > 99
     disp([num2str(length(artifacts)) ' artifacts in bin'])    
 end
 
