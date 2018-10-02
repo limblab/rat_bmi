@@ -1,4 +1,7 @@
-function ME = realtime_Wrapper(fes_params)
+function ME = realtime_Wrapper2(fes_params)
+% Works mostly the same as realtime_Wrapper, but uses a simple classifier
+% to recreate stepping motion instead of a linear decoder
+%
 % --- realtime_Wrapper(fes_params) ---
 %
 % A single function that will take care of running all of code necessary
@@ -128,10 +131,23 @@ stimPW = zeros(length(fes_params.fes_stim_params.PW_min));
 
 trial_time = tic;
 
-fRates = zeros(round(neuronDecoder.fillen/neuronDecoder.binsize),length(neuronDecoder.neuronIDs));
+NAVG = 120;
+fRates = zeros(NAVG,1);
 
 ME = -1;
 profile on;
+
+%params for auto step
+state = 'waiting';
+%chan = [10 20 22 24 27 31];
+chan = setdiff(1:32,14);
+NABOVE = 2;
+NSWING = 5;
+NSTANCE = 20;
+flag = 0;
+
+swing_Amp = [1.5,0,0,2,.75,0,0];
+stance_Amp = [0,1,0,0,0,.75,.5];
 
 try
 while ishandle(keepRunning)
@@ -160,48 +176,89 @@ while ishandle(keepRunning)
     
     %% collect data from plexon, store in binary
     new_spikes = get_New_PlexData(pRead, fes_params,tsPointer);
-    fRates = [new_spikes; fRates(1:end-1,:)];
+    fRates = [sum(new_spikes(chan))/32; fRates(1:end-1,:)];
     
     tempdata = [tLoopOld,new_spikes];
     fwrite(spPointer,tempdata,'double');
     
     
     %% predict from plexon data, store
-    emgPreds = [1 fRates(:)']*neuronDecoder.H;
-    
-    % implement static non-linearity
-    if isfield(neuronDecoder,'P') && numel(neuronDecoder.P) > 1 % do we have non-static linearities
-        nonlinearity = zeros(1,length(emgPreds));
-        for ii = 1:length(emgPreds)
-            nonlinearity(ii) = polyval(neuronDecoder.P(:,ii),emgPreds(ii));
-        end
-        emgPreds = nonlinearity;
-    end
-    
-    % save these into data file
-    tempdata = [tLoopOld,emgPreds];
-    fwrite(predPointer,tempdata,'double');
+%     emgPreds = [1 fRates(:)']*neuronDecoder.H;
+%     
+%     % implement static non-linearity
+%     if isfield(neuronDecoder,'P') && numel(neuronDecoder.P) > 1 % do we have non-static linearities
+%         nonlinearity = zeros(1,length(emgPreds));
+%         for ii = 1:length(emgPreds)
+%             nonlinearity(ii) = polyval(neuronDecoder.P(:,ii),emgPreds(ii));
+%         end
+%         emgPreds = nonlinearity;
+%     end
+%     
+%     % save these into data file
+%     tempdata = [tLoopOld,emgPreds];
+%     fwrite(predPointer,tempdata,'double');
     
     %% convert predictions to stimulus values, store
+%     
+%     % if we're going to do catch trials for the monkeys, we're gonna need
+%     % to interact with the XPC. This will depend on whether we're using the
+%     % same code base for both systems.
+%     % -- insert here if needed --
+%     
+%     % Get the PW and amplitude
+%     [stimPW, stimAmp] = EMG_to_stim(emgPreds, fes_params.fes_stim_params); % takes care of all of the mapping
+% 
+%         
+%     if strcmp(fes_params.fes_stim_params.mode,'PW_modulation')
+%         tempdata = [toc(tStart),stimPW];
+%         fwrite(stimPointer,tempdata,'double');
+%     elseif strcmp(fes_params.fes_stim_params.mode,'amplitude_modulation')
+%         tempdata = [toc(tStart),stimAmp];
+%         fwrite(stimPointer,tempdata,'double');
+%     end
+%     
     
-    % if we're going to do catch trials for the monkeys, we're gonna need
-    % to interact with the XPC. This will depend on whether we're using the
-    % same code base for both systems.
-    % -- insert here if needed --
+    %% Convert Spike data to stimulus parameters
+    signal = sum(new_spikes(chan))/32; %/length(chan);
+    stimAmp = zeros(1,7);
+    stimPW = zeros(1,7);
     
-    % Get the PW and amplitude
-    [stimPW, stimAmp] = EMG_to_stim(emgPreds, fes_params.fes_stim_params); % takes care of all of the mapping
-
-        
-    if strcmp(fes_params.fes_stim_params.mode,'PW_modulation')
-        tempdata = [toc(tStart),stimPW];
-        fwrite(stimPointer,tempdata,'double');
-    elseif strcmp(fes_params.fes_stim_params.mode,'amplitude_modulation')
-        tempdata = [toc(tStart),stimAmp];
-        fwrite(stimPointer,tempdata,'double');
+    AVG = mean(fRates);
+    SD = std(fRates);
+    THRESH = AVG + 1*SD;
+    
+    switch state
+        case 'waiting'
+            if signal > THRESH
+                flag = flag + 1;
+            else
+                flag = 0;
+            end
+            
+            if flag == NABOVE
+                state = 'swing phase';
+                count = 0;
+            end
+            stimAmp = zeros(1,7);
+            stimPW = zeros(1,7);
+        case 'swing phase'
+            count = count + 1;
+            if count > NSWING
+                state = 'stance phase';
+                count = 0;
+            end
+            stimAmp = stance_Amp;
+            stimPW = 0.2*ones(1,7);
+        case 'stance phase'
+            count = count + 1;
+            if count > NSTANCE
+                state = 'waiting';
+                count = 0;
+            end
+            stimAmp = swing_Amp;
+            stimPW = 0.2*ones(1,7);
     end
-    
-    
+
     %% send stimulus params to wStim after 1 second of recording
     if loopCnt > 20
         [stimCmd, channelList]    = stim_elect_mapping_wireless( stimPW, ...
